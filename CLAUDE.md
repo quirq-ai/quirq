@@ -7,8 +7,10 @@ Before committing, run `python3 .github/scripts/check_structure.py` and fix ever
 The short version:
 
 - Top level holds only the five sections (`Activity`, `Chat`, `Insights`, `Library`, `Vision`), `.github/`, and the root docs and config files.
-- Sections hold one file type each: Activity `.jsonl`, Chat `.json`, Insights `.json`, Library `.url`, Vision `.md`. Each has a `README.md`.
-- Sections are flat except Chat, which is `Chat/<username>/tasks/<task-name>/` (username = GitHub login, lowercase). Each task folder has a `README.md` with a `## Purpose` section and a `## Output format` section set to exactly one of Slides, One pager, Website, GitHub URL, plus its conversation `.json` files.
+- Sections hold one file type each: Activity `.jsonl`, Chat `.json` (plus task READMEs and outcomes), Insights `.json`, Library `.url`, Vision `.md`. Each has a `README.md`.
+- Sections are flat except Chat, which is `Chat/<username>/tasks/<task-name>/` (username = GitHub login, lowercase). A task folder holds `README.md` (`## Goal` and `## Output format`), `chats/*.json`, and `outcome/`.
+- Output format is exactly one of Slides, One pager, Website, GitHub URL, and decides the outcome file: `outcome/slides.md`, `outcome/one-pager.md`, `outcome/index.html`, or `outcome/github.url`.
+- When asked to work on a task: read its README goal and everything in `chats/`, generate the outcome in the declared format, and save the conversation to `chats/` if it isn't there yet.
 - Content file names are lowercase kebab-case.
 - Links use paths relative to the repository root and must point to real files. No machine-specific paths.
 - Scripts and tooling go under `.github/`, never in content folders.
