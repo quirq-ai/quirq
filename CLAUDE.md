@@ -7,7 +7,8 @@ Before committing, run `python3 .github/scripts/check_structure.py` and fix ever
 The short version:
 
 - Top level holds only the five sections (`Activity`, `Chat`, `Insights`, `Library`, `Vision`), `.github/`, and the root docs and config files.
-- Sections are flat and hold one file type each: Activity `.jsonl`, Chat `.json`, Insights `.json`, Library `.url`, Vision `.md`. Each has a `README.md`.
+- Sections hold one file type each: Activity `.jsonl`, Chat `.json`, Insights `.json`, Library `.url`, Vision `.md`. Each has a `README.md`.
+- Sections are flat except Chat, which is `Chat/<username>/tasks/<task-name>/` (username = GitHub login, lowercase). Each task folder has a `README.md` with a `## Purpose` section and a `## Output format` section set to exactly one of Slides, One pager, Website, GitHub URL, plus its conversation `.json` files.
 - Content file names are lowercase kebab-case.
 - Links use paths relative to the repository root and must point to real files. No machine-specific paths.
 - Scripts and tooling go under `.github/`, never in content folders.

@@ -17,7 +17,7 @@ CONTRIBUTING.md    these rules
 CLAUDE.md          the same rules, pointed at for AI assistants
 .github/           CI and tooling (kept out of the content folders)
 Activity/          feed events, *.jsonl
-Chat/              saved conversations, *.json
+Chat/              saved conversations, Chat/<username>/tasks/<task-name>/
 Insights/          insight collections, *.json
 Library/           web shortcuts, *.url
 Vision/            direction documents, *.md
@@ -25,16 +25,50 @@ Vision/            direction documents, *.md
 
 - Only the files and folders above may sit at the top level. **(checked)** A new section or top-level file needs this list, the checker, and the README updated in the same pull request.
 - Every section has a `README.md` that says what goes in it. **(checked)**
-- Sections are flat: no subfolders. **(checked)**
-- Each section holds only its own file type, listed above. **(checked)**
+- Sections are flat: no subfolders, except Chat (below). **(checked)**
+- Each section holds only its own file type, listed above, plus README.md files. **(checked)**
+
+### Chat
+
+Chat is grouped by person, then by task:
+
+```
+Chat/
+  README.md
+  <username>/
+    tasks/
+      <task-name>/
+        README.md    "# Title", then "## Purpose" and "## Output format"
+        index.json   the saved conversation (more *.json files allowed)
+```
+
+- `<username>` is the person's GitHub login in lowercase. **(checked: lowercase kebab-case)**
+- `<task-name>` describes the task in lowercase kebab-case, such as `plan-q4-launch`. **(checked)**
+- Nothing else goes in Chat: no files directly under `Chat/<username>/` or `tasks/`, and no deeper folders. **(checked)**
+- Every task folder has a README.md with a `## Purpose` section that has text under it. **(checked)**
+- The README also has a `## Output format` section whose first line is exactly one of: `Slides`, `One pager`, `Website`, `GitHub URL` (case-insensitive). No other formats are accepted. **(checked)**
+
+Example task README:
+
+```markdown
+# Plan Q4 launch
+
+## Purpose
+
+Agree on the launch date, owners, and the three announcements.
+
+## Output format
+
+Slides
+```
 - Tooling, scripts, and schemas live under `.github/`, never in the content folders or at the top level, so the app does not show them.
 
 ## Naming
 
-- Section folders are Title Case and fixed: `Activity`, `Chat`, `Insights`, `Library`, `Vision`.
+- Section folders are Title Case and fixed: `Activity`, `Chat`, `Insights`, `Library`, `Vision`. Folders inside Chat are lowercase kebab-case.
 - Content files are lowercase kebab-case with a lowercase extension, such as `weekly-review.md` or `team-retro.json`. **(checked)**
 - Name a file for what it holds, not when or by whom it was made. Avoid `new`, `final`, `copy`, `v2`, or dates in names; git keeps the history.
-- `index.json` in Chat and Insights and `example.*` elsewhere are the names open-chat currently opens by default. Keep them until the app's conventions change.
+- `index.json` in Chat task folders and Insights and `example.*` elsewhere are the names open-chat currently opens by default. Keep them until the app's conventions change.
 
 ## File formats
 
