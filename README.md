@@ -10,13 +10,13 @@ A small, filesystem-first workspace for quirqy, viewed with [open-chat](https://
 - **Vision** — one short direction document: Vision/example.md.
 - **Library** — one website shortcut: Library/example.url.
 
-Each section contains only its README and one example. This root README explains the workspace; LICENSE retains the repository's existing license. No generated logs, nested example directories, or duplicate welcome screens are included.
+Each section holds its README plus its content files. The rules for adding, naming, and formatting files are in [CONTRIBUTING.md](CONTRIBUTING.md), and a CI check enforces them on every pull request.
 
 ## Open this workspace
 
 Run open-chat locally, click the quirqy name, browse to this directory, and choose **Observe this folder**. If the directory is outside the picker's boundary, set MIRROR_BROWSE_ROOT in the app's .env.local to its parent directory. Alternatively, set MIRROR_ROOT to this directory before starting the app.
 
-For the local sample copy, select D:/XO/quirq/swarm-desktop/sample. Select the sample folder itself so links in the examples resolve from this root. The dock in the current open-chat version orders these sections as Chat, Activity, Insights, Vision, Library.
+Select the root of this repository itself so the links in the examples, which are relative to the root, resolve. The dock in the current open-chat version orders these sections as Chat, Activity, Insights, Vision, Library.
 
 ## Change what you see
 
