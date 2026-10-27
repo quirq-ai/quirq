@@ -4,7 +4,7 @@ A small, filesystem-first workspace for quirqy, viewed with [open-chat](https://
 
 ## Five places, five examples
 
-- **Chat** — saved conversations, one folder per person and task: Chat/sharmasuraj0123/tasks/getting-started/.
+- **Chat** — one folder per person and task, each with a goal, its saved chats, and a generated outcome: Chat/sharmasuraj0123/tasks/getting-started/.
 - **Activity** — one feed event: Activity/example.jsonl.
 - **Insights** — one insight card: Insights/index.json.
 - **Vision** — one short direction document: Vision/example.md.

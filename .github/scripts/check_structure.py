@@ -35,10 +35,19 @@ ROOT_DIRS = {".github"} | set(SECTIONS)
 
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.[a-z]+$")
 SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-# Chat is the one nested section: Chat/<username>/tasks/<task-name>/<file>.
-CHAT_TASK_DEPTH = 5
-# What a task delivers; the first line of its "## Output format" section.
-OUTPUT_FORMATS = ("Slides", "One pager", "Website", "GitHub URL")
+# Chat is the one nested section: Chat/<username>/tasks/<task-name>/ holds
+# README.md, chats/*.json, and outcome/<file for the task's output format>.
+TASK_DEPTH = 5
+# Output format (first line of "## Output format", any case) -> outcome file.
+OUTPUT_FORMATS = {
+    "slides": "slides.md",
+    "one pager": "one-pager.md",
+    "website": "index.html",
+    "github url": "github.url",
+}
+FORMAT_NAMES = "Slides, One pager, Website, GitHub URL"
+GITHUB_URL_RE = re.compile(r"^https://github\.com/\S+$")
+SLIDE_BREAK_RE = re.compile(r"^---[ \t]*$", re.MULTILINE)
 URL_RE = re.compile(r"^https?://\S+$")
 # Paths that only exist on one person's machine.
 LOCAL_PATH_RE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]|/Users/|/home/|\\\\")
@@ -171,40 +180,78 @@ def markdown_sections(text):
 
 
 def check_task_readme(path, text):
+    """Check a task README and return its output format, or None."""
     check_markdown(path, text)
     sections = markdown_sections(text)
-    if not sections.get("Purpose"):
-        fail(path, 'task README needs a "## Purpose" section with text under it')
+    if not sections.get("Goal"):
+        fail(path, 'task README needs a "## Goal" section with text under it')
     output = sections.get("Output format")
-    allowed = ", ".join(OUTPUT_FORMATS)
     if not output:
-        fail(path, f'task README needs a "## Output format" section: one of {allowed}')
-    elif output[0].lower() not in {f.lower() for f in OUTPUT_FORMATS}:
-        fail(path, f"output format {output[0]!r} is not one of {allowed}")
+        fail(path, f'task README needs a "## Output format" section: one of {FORMAT_NAMES}')
+        return None
+    if output[0].lower() not in OUTPUT_FORMATS:
+        fail(path, f"output format {output[0]!r} is not one of {FORMAT_NAMES}")
+        return None
+    return output[0].lower()
 
 
-def check_chat_layout(path, text, task_dirs):
-    """Check one file under Chat/ against the user/tasks/task layout.
+def check_chat_layout(path, text, tasks):
+    """Check one file under Chat/ against the task layout.
 
-    Returns True when the file is a conversation that still needs its
-    content checked.
+    Returns True when the file is a saved chat that still needs its
+    content checked. Outcome files are collected in tasks and checked once
+    the task's output format is known.
     """
     parts = path.parts
     if len(parts) == 2 and path.name == "README.md":
         check_markdown(path, text)
         return False
-    if len(parts) != CHAT_TASK_DEPTH or parts[2] != "tasks":
+    if len(parts) < TASK_DEPTH or parts[2] != "tasks":
         fail(path, "Chat files go in Chat/<username>/tasks/<task-name>/")
         return False
     for slug in (parts[1], parts[3]):
         if not SLUG_RE.match(slug):
             fail(path, f"folder {slug!r} must be lowercase kebab-case")
             return False
-    task_dirs.add(Path(*parts[:4]))
-    if path.name == "README.md":
-        check_task_readme(path, text)
+    task = tasks.setdefault(Path(*parts[:4]), {"readme": False, "format": None, "outcome": []})
+    if len(parts) == TASK_DEPTH and path.name == "README.md":
+        task["readme"] = True
+        task["format"] = check_task_readme(path, text)
         return False
-    return True
+    if len(parts) == TASK_DEPTH + 1 and parts[4] == "chats":
+        return True
+    if len(parts) == TASK_DEPTH + 1 and parts[4] == "outcome":
+        task["outcome"].append((path, text))
+        return False
+    fail(path, "a task folder holds only README.md, chats/*.json, and outcome/")
+    return False
+
+
+def check_outcome(path, text, output_format):
+    expected = OUTPUT_FORMATS[output_format]
+    if path.name != expected:
+        fail(path, f"the outcome for this task's output format is outcome/{expected}")
+    elif expected == "github.url":
+        lines = [l for l in text.splitlines() if l.strip()]
+        if len(lines) != 1 or not GITHUB_URL_RE.match(lines[0]):
+            fail(path, "must contain exactly one https://github.com/ URL")
+    elif expected == "index.html":
+        if "<html" not in text.lower():
+            fail(path, "must be a complete HTML page")
+    else:
+        check_markdown(path, text)
+        if expected == "slides.md" and not SLIDE_BREAK_RE.search(text):
+            fail(path, 'slides are separated by a line containing only "---"')
+
+
+def check_tasks(tasks):
+    for task_dir, task in sorted(tasks.items()):
+        if not task["readme"]:
+            fail(task_dir, "task folder is missing its README.md")
+        if task["format"] is None:
+            continue
+        for path, text in task["outcome"]:
+            check_outcome(path, text, task["format"])
 
 
 def check_content(path, text):
@@ -232,7 +279,7 @@ def check_content(path, text):
 def main():
     files = tracked_files()
     seen_sections = set()
-    chat_task_dirs = set()
+    chat_tasks = {}
 
     for path in files:
         top = path.parts[0]
@@ -250,7 +297,7 @@ def main():
 
         seen_sections.add(top)
         if top == "Chat":
-            if not check_chat_layout(path, text, chat_task_dirs):
+            if not check_chat_layout(path, text, chat_tasks):
                 continue
         elif len(path.parts) != 2:
             fail(path, "sections are flat; no subfolders")
@@ -266,9 +313,7 @@ def main():
             continue
         check_content(path, text)
 
-    for task in sorted(chat_task_dirs):
-        if not (ROOT / task / "README.md").is_file():
-            fail(task, "task folder is missing its README.md")
+    check_tasks(chat_tasks)
 
     for section in SECTIONS:
         if section not in seen_sections or not (ROOT / section / "README.md").is_file():

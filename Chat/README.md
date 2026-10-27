@@ -1,11 +1,14 @@
 # Chat
 
-Saved conversations, grouped by person and then by task:
+Every task gets a folder here, grouped by person:
 
 ```
 Chat/<username>/tasks/<task-name>/
-  README.md     "## Purpose" (what the task is for) and "## Output format"
-  index.json    the saved conversation
+  README.md     "## Goal" (what you want) and "## Output format"
+  chats/        saved conversations about the task
+  outcome/      what Claude generates from the goal and the chats
 ```
 
-The output format is one of Slides, One pager, Website, or GitHub URL. `<username>` is the person's GitHub login in lowercase, and `<task-name>` is lowercase kebab-case. Start with sharmasuraj0123/tasks/getting-started/index.json. Edit its messages on disk to change the view. Conversations are read-only and do not call a model or generate replies. File links are relative to the repository root.
+You write the goal and pick an output format: Slides, One pager, Website, or GitHub URL. The project's conversations are stored in `chats/`, and Claude writes the result to `outcome/` in that format (`slides.md`, `one-pager.md`, `index.html`, or `github.url`). `<username>` is the person's GitHub login in lowercase, and `<task-name>` is lowercase kebab-case.
+
+Start with sharmasuraj0123/tasks/getting-started/. Saved chats are read-only in the app and do not call a model. File links are relative to the repository root. The full rules are in CONTRIBUTING.md.
