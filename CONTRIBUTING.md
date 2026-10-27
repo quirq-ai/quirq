@@ -36,10 +36,12 @@ Chat is where work happens. Each task gets a folder, grouped by person:
 Chat/
   README.md
   <username>/
+    <any file>        inbox: drop anything here; Claude sorts it into a task
     tasks/
       <task-name>/
         README.md     "# Title", then "## Goal" and "## Output format"
         chats/        saved conversations about the task, *.json
+        sources/      files sorted in from the inbox, any type
         outcome/      what Claude generated, in the task's output format
 ```
 
@@ -47,7 +49,20 @@ The workflow:
 
 1. **Define the goal.** The person creates the task folder and writes the README: a `## Goal` section in their own words and a `## Output format` section.
 2. **Store the chats.** Project conversations about the task are saved to `chats/` as conversation JSON (same format as below), one file per conversation, named for what it covers, such as `kickoff.json`.
-3. **Generate the outcome.** Claude reads the goal and the chats and writes the result to `outcome/`, then opens a pull request. When the goal or chats change, Claude regenerates the outcome.
+3. **Generate the outcome.** Claude reads the goal, the chats, and the sources and writes the result to `outcome/`, then opens a pull request. When any of them change, Claude regenerates the outcome.
+
+### Triage: sorting the inbox into fewer tasks
+
+Anyone can drop files of any type and name straight into `Chat/<username>/`. Claude runs triage on a schedule and whenever asked:
+
+1. **Sort.** Read each inbox file and move it (`git mv`) into the `sources/` of the task whose goal it serves, renamed to lowercase kebab-case. A saved conversation goes to `chats/` instead.
+2. **Create only when nothing fits.** If no task fits, start one: draft the Goal from the file and pick the closest output format, and say in the Goal that Claude drafted it so the person can edit it.
+3. **Consolidate.** Prefer fewer tasks. When two tasks' goals overlap or one is a step of another, merge them into the broader one: move its chats and sources across, combine the goals, and delete the emptied folder. Never merge goals the person wrote that are clearly separate.
+4. **Chain the conversation.** Append the project thread's new messages to that task's existing `chats/` file for the thread rather than starting a new file each time.
+5. **Regenerate** the outcome of every task that changed.
+6. **Ship and report.** Open a pull request, merge it once the Structure check is green, and post what moved where in the project thread.
+
+The checker lists inbox files as a note, not an error, so dropping files never breaks CI.
 
 The output format decides the outcome file. These four are the only accepted formats:
 
@@ -65,7 +80,8 @@ Rules:
 - Every task folder has a README.md with a `## Goal` section that has text under it. **(checked)**
 - The README has a `## Output format` section whose first line is exactly one of `Slides`, `One pager`, `Website`, `GitHub URL` (case-insensitive). **(checked)**
 - `outcome/` holds only the file for the task's format, and it may be absent until the outcome is generated. **(checked)**
-- A task folder holds only README.md, `chats/*.json`, and `outcome/`. Nothing else goes in Chat: no files directly under `Chat/<username>/` or `tasks/`, and no deeper folders. **(checked)**
+- Inbox files directly under `Chat/<username>/` and files in `sources/` can be any type up to 25 MB. Sorted `sources/` files use lowercase kebab-case names. **(checked)**
+- A task folder holds only README.md, `chats/*.json`, `sources/`, and `outcome/`. Nothing else goes in Chat: no files directly under `Chat/<username>/` or `tasks/`, and no deeper folders. **(checked)**
 
 Example task README:
 

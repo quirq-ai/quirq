@@ -36,8 +36,13 @@ ROOT_DIRS = {".github"} | set(SECTIONS)
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.[a-z]+$")
 SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 # Chat is the one nested section: Chat/<username>/tasks/<task-name>/ holds
-# README.md, chats/*.json, and outcome/<file for the task's output format>.
+# README.md, chats/*.json, sources/, and outcome/<file for the output format>.
 TASK_DEPTH = 5
+# Files dropped straight into Chat/<username>/ wait there until Claude sorts
+# them into tasks. They and a task's sources/ may be any type, so they skip
+# the text checks and only have a larger size limit.
+INBOX_DEPTH = 3
+MAX_FREE_FORM_BYTES = 25_000_000
 # Output format (first line of "## Output format", any case) -> outcome file.
 OUTPUT_FORMATS = {
     "slides": "slides.md",
@@ -195,6 +200,26 @@ def check_task_readme(path, text):
     return output[0].lower()
 
 
+def check_free_form(path, inbox):
+    """Check an inbox file or a task source; return False if path is neither."""
+    parts = path.parts
+    is_inbox = len(parts) == INBOX_DEPTH and path.name != "README.md"
+    is_source = len(parts) == TASK_DEPTH + 1 and parts[2] == "tasks" and parts[4] == "sources"
+    if not (is_inbox or is_source):
+        return False
+    if not SLUG_RE.match(parts[1]):
+        fail(path, f"folder {parts[1]!r} must be lowercase kebab-case")
+    if (ROOT / path).stat().st_size > MAX_FREE_FORM_BYTES:
+        fail(path, f"larger than {MAX_FREE_FORM_BYTES} bytes")
+    if is_inbox:
+        inbox.append(path)
+    elif not SLUG_RE.match(parts[3]):
+        fail(path, f"folder {parts[3]!r} must be lowercase kebab-case")
+    elif not NAME_RE.match(path.name):
+        fail(path, "sorted source files are lowercase kebab-case, e.g. pricing-notes.pdf")
+    return True
+
+
 def check_chat_layout(path, text, tasks):
     """Check one file under Chat/ against the task layout.
 
@@ -223,7 +248,7 @@ def check_chat_layout(path, text, tasks):
     if len(parts) == TASK_DEPTH + 1 and parts[4] == "outcome":
         task["outcome"].append((path, text))
         return False
-    fail(path, "a task folder holds only README.md, chats/*.json, and outcome/")
+    fail(path, "a task folder holds only README.md, chats/*.json, sources/, and outcome/")
     return False
 
 
@@ -280,6 +305,7 @@ def main():
     files = tracked_files()
     seen_sections = set()
     chat_tasks = {}
+    inbox = []
 
     for path in files:
         top = path.parts[0]
@@ -288,6 +314,10 @@ def main():
                 fail(path, "not an allowed top-level file (see CONTRIBUTING.md)")
         elif top not in ROOT_DIRS:
             fail(path, "not inside an allowed top-level folder (see CONTRIBUTING.md)")
+
+        if top == "Chat" and check_free_form(path, inbox):
+            seen_sections.add(top)
+            continue
 
         text = check_text(path, (ROOT / path).read_bytes())
         if text is None or top not in SECTIONS:
@@ -318,6 +348,11 @@ def main():
     for section in SECTIONS:
         if section not in seen_sections or not (ROOT / section / "README.md").is_file():
             fail(Path(section), "section is missing its README.md")
+
+    if inbox:
+        print(f"Note: {len(inbox)} unsorted file(s) waiting in Chat/<username>/ for triage:")
+        for path in inbox:
+            print(f"  {path}")
 
     if errors:
         print("\n".join(errors))

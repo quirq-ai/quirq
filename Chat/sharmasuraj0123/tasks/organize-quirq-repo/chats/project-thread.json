@@ -37,10 +37,18 @@
     },
     {
       "role": "assistant",
-      "content": "Each task folder now has a README with the goal and output format, a chats/ folder for the saved conversations, and an outcome/ folder for what Claude generates in the chosen format. This conversation is saved as the first task, organize-quirq-repo, and its outcome links to the rules.",
+      "content": "I merged PR #3. Each task folder now has a README with the goal and output format, a chats/ folder for the saved conversations, and an outcome/ folder for what Claude generates: slides.md, one-pager.md, index.html, or github.url. This conversation is saved as the first task, organize-quirq-repo."
+    },
+    {
+      "role": "user",
+      "content": "and I will keep on adding random files under the username directory and your job will be to organize it based on the tasks, make the best efforr to merge them into less and then less tasks and try to chain these messages here."
+    },
+    {
+      "role": "assistant",
+      "content": "Files dropped straight into Chat/<username>/ are now an inbox. Triage sorts each one into the best-fitting task's sources/, creates a task only when nothing fits, merges overlapping tasks so the list keeps shrinking, appends new thread messages to this chat file, and regenerates the changed outcomes. The checker lists inbox files as a note instead of failing, and triage runs on a schedule.",
       "links": [
         {
-          "label": "Read the rules",
+          "label": "Read the triage rules",
           "path": "CONTRIBUTING.md"
         }
       ]
