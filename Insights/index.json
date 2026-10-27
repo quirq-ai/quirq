@@ -1,0 +1,15 @@
+{
+  "type": "collection",
+  "title": "One thing worth keeping",
+  "subtitle": "A small insight, grounded in your workspace.",
+  "items": [
+    {
+      "title": "Less content makes the next step clearer.",
+      "description": "Keep one useful example in each place. Add more only when there is something worth saving.",
+      "category": "Workspace design",
+      "status": "Saved",
+      "path": "Vision/example.md",
+      "meta": "Read the direction"
+    }
+  ]
+}

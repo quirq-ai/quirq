@@ -1,0 +1,21 @@
+{
+  "type": "conversation",
+  "title": "Start with a little clarity.",
+  "subtitle": "One saved exchange, straight from your files.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What should this workspace help me do?"
+    },
+    {
+      "role": "assistant",
+      "content": "Notice what happened, keep one useful insight, and move toward a clear direction. Start with the vision below.",
+      "links": [
+        {
+          "label": "Read the vision",
+          "path": "Vision/example.md"
+        }
+      ]
+    }
+  ]
+}
