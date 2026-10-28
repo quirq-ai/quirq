@@ -40,7 +40,7 @@ Chat/
     tasks/
       <task-name>/
         README.md     "# Title", then "## Goal" and "## Output format"
-        chats/        saved conversations about the task, *.json
+        chats/        saved conversations about the task, *.json (+ *.log.jsonl)
         sources/      files sorted in from the inbox, any type
         outcome/      what Claude generated, in the task's output format
 ```
@@ -58,7 +58,7 @@ Anyone can drop files of any type and name straight into `Chat/<username>/`. Cla
 1. **Sort.** Read each inbox file and move it (`git mv`) into the `sources/` of the task whose goal it serves, renamed to lowercase kebab-case. A saved conversation goes to `chats/` instead.
 2. **Create only when nothing fits.** If no task fits, start one: draft the Goal from the file and pick the closest output format, and say in the Goal that Claude drafted it so the person can edit it.
 3. **Consolidate.** Prefer fewer tasks. When two tasks' goals overlap or one is a step of another, merge them into the broader one: move its chats and sources across, combine the goals, and delete the emptied folder. Never merge goals the person wrote that are clearly separate.
-4. **Chain the conversation.** Append the project thread's new messages to that task's existing `chats/` file for the thread rather than starting a new file each time.
+4. **Chain the conversation.** Append the project thread's new messages to that task's existing `chats/` file for the thread rather than starting a new file each time. Turns people typed on the hub are already chained in that conversation's `.log.jsonl`.
 5. **Regenerate** the outcome of every task that changed.
 6. **Ship and report.** Open a pull request, merge it once the Structure check is green, and post what moved where in the project thread.
 
@@ -81,7 +81,8 @@ Rules:
 - The README has a `## Output format` section whose first line is exactly one of `Slides`, `One pager`, `Website`, `GitHub URL` (case-insensitive). **(checked)**
 - `outcome/` holds only the file for the task's format, and it may be absent until the outcome is generated. **(checked)**
 - Inbox files directly under `Chat/<username>/` and files in `sources/` can be any type up to 25 MB. Sorted `sources/` files use lowercase kebab-case names. **(checked)**
-- A task folder holds only README.md, `chats/*.json`, `sources/`, and `outcome/`. Nothing else goes in Chat: no files directly under `Chat/<username>/` or `tasks/`, and no deeper folders. **(checked)**
+- A conversation can have a chat log beside it: `chats/<name>.log.jsonl` next to `chats/<name>.json`. The hub's chat box writes it (see README), one turn per line, each a JSON object with `role` of `user` or `assistant` and string `content` (plus optional `id`, `author`, `time`, `links`). Leave these logs where they are and append to them rather than folding turns back into the `.json`. **(checked: matching `.json` exists, every line is a valid turn, link paths exist)**
+- A task folder holds only README.md, `chats/*.json` and their `*.log.jsonl`, `sources/`, and `outcome/`. Nothing else goes in Chat: no files directly under `Chat/<username>/` or `tasks/`, and no deeper folders. **(checked)**
 
 Example task README:
 
@@ -132,6 +133,13 @@ Every Markdown file, including the READMEs, starts with a `# Title` heading. **(
 - Secrets, API keys, and `.env` files. App settings stay in open-chat's own `.env.local`.
 - Duplicate copies of a file; edit the original instead.
 - Notes about past cleanups or history; that belongs in commit messages.
+
+## The hub
+
+The same repository is the project `quirq/quirq` on [hub.quirq.dev](https://hub.quirq.dev/quirq/quirq), in the `quirq` space. GitHub (`quirq-ai/quirq`) is where pull requests and the Structure check run; the hub is where the workspace is viewed and chatted in. Keep the two `main` branches the same:
+
+- After a pull request merges, push `main` to the hub: `git push quirq main`.
+- The hub's chat box commits straight to the hub's `main`. Before pushing, `git pull --no-rebase quirq main` so those commits come along without rewriting GitHub history, then push them to GitHub too.
 
 ## Changes
 

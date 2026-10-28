@@ -18,6 +18,18 @@ Run open-chat locally, click the quirqy name, browse to this directory, and choo
 
 Select the root of this repository itself so the links in the examples, which are relative to the root, resolve. The dock in the current open-chat version orders these sections as Chat, Activity, Insights, Vision, Library.
 
+## On the hub
+
+This workspace is also the project [quirq/quirq](https://hub.quirq.dev/quirq/quirq) on hub.quirq.dev, in the `quirq` space. Its **Files** tab shows the sections the way open-chat does, and members of the space can type into any conversation: each message is appended to the `.log.jsonl` beside it and committed for them. To work on it with plain git, install the spacehub CLI, run `spacehub auth login`, then:
+
+```sh
+git remote add quirq quirq://hub.quirq.dev/quirq/quirq
+git pull --no-rebase quirq main
+git push quirq main
+```
+
+CONTRIBUTING.md says how the hub and GitHub stay in step.
+
 ## Change what you see
 
 Edit a file on disk and the active app refreshes automatically. Add JSONL lines to extend the activity feed; change the conversation messages or insight card; edit the vision document; replace the URL with your own address. The app displays these files read-only. The chat example is a saved conversation, without a live model or sample-reply engine. No model, API key, account, or database is required. The Library webpage loads externally; sites that block embedding can be opened with **Open in new tab**.
