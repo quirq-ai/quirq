@@ -36,7 +36,8 @@ ROOT_DIRS = {".github"} | set(SECTIONS)
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.[a-z]+$")
 SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 # Chat is the one nested section: Chat/<username>/tasks/<task-name>/ holds
-# README.md, chats/*.json, sources/, and outcome/<file for the output format>.
+# README.md, chats/*.json (and their *.log.jsonl), sources/, and
+# outcome/<file for the output format>.
 TASK_DEPTH = 5
 # Files dropped straight into Chat/<username>/ wait there until Claude sorts
 # them into tasks. They and a task's sources/ may be any type, so they skip
@@ -60,6 +61,9 @@ MAX_BYTES = 1_000_000
 
 ACTIVITY_KEYS = ("author", "type", "title", "content")
 CHAT_ROLES = {"user", "assistant"}
+# The hub's chat box (hub.quirq.dev) appends new turns to
+# chats/<name>.log.jsonl beside chats/<name>.json, one JSON object per line.
+CHAT_LOG_SUFFIX = ".log.jsonl"
 
 errors = []
 
@@ -120,6 +124,36 @@ def check_chat(path, data):
             fail(path, f"messages[{i}].content must be a string")
         for link in msg.get("links", []):
             check_link(path, link.get("path") if isinstance(link, dict) else None)
+
+
+def check_chat_log(path, text):
+    stem = path.name[: -len(CHAT_LOG_SUFFIX)]
+    if not SLUG_RE.match(stem):
+        fail(path, "file names are lowercase kebab-case, e.g. kickoff.log.jsonl")
+        return
+    if not (ROOT / path.parent / f"{stem}.json").is_file():
+        fail(path, f"a chat log sits beside its conversation; {stem}.json is missing")
+    turns = 0
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            turn = json.loads(line)
+        except json.JSONDecodeError as e:
+            fail(path, f"line {n} is not valid JSON ({e.msg})")
+            continue
+        turns += 1
+        if not isinstance(turn, dict):
+            fail(path, f"line {n} must be a JSON object")
+            continue
+        if turn.get("role") not in CHAT_ROLES:
+            fail(path, f"line {n} role must be one of {sorted(CHAT_ROLES)}")
+        if not isinstance(turn.get("content"), str):
+            fail(path, f"line {n} needs a string 'content'")
+        for link in turn.get("links", []):
+            check_link(path, link.get("path") if isinstance(link, dict) else None)
+    if not turns:
+        fail(path, "has no turns")
 
 
 def check_insights(path, data):
@@ -244,6 +278,9 @@ def check_chat_layout(path, text, tasks):
         task["format"] = check_task_readme(path, text)
         return False
     if len(parts) == TASK_DEPTH + 1 and parts[4] == "chats":
+        if path.name.endswith(CHAT_LOG_SUFFIX):
+            check_chat_log(path, text)
+            return False
         return True
     if len(parts) == TASK_DEPTH + 1 and parts[4] == "outcome":
         task["outcome"].append((path, text))
