@@ -1,0 +1,15 @@
+{
+  "type": "conversation",
+  "title": "Build the simulator",
+  "subtitle": "Worker sub-channel run by an Agents Hub task",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Make a really powerful tanker mooring simulator; make sure three.js and other libraries are used."
+    },
+    {
+      "role": "assistant",
+      "content": "I opened this sub-channel for the worker task tanker-mooring-simulator/build. Its pull request link goes in output/ when it finishes."
+    }
+  ]
+}

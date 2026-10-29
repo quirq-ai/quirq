@@ -1,0 +1,15 @@
+{
+  "type": "conversation",
+  "title": "Tanker mooring simulator",
+  "subtitle": "Browser-based tanker mooring simulation on three.js",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Spin up a new task agent for euler to make a really powerful simulator that simulates tanker mooring simulation, give a detailed prompt to ensure 3js and others are used and give all the instructions as before."
+    },
+    {
+      "role": "assistant",
+      "content": "Opened this channel and the worker sub-channel Chat/tanker-mooring-simulator/build, which runs the Agents Hub task tanker-mooring-simulator/build. The simulator lands in this channel's output/index.html through a pull request."
+    }
+  ]
+}
