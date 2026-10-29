@@ -1,0 +1,11 @@
+{
+  "type": "conversation",
+  "title": "quirq-ai wiki",
+  "subtitle": "One page per quirq-ai repository",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Now on quirq/quirq make a wiki on quirq-ai and inside make a one pager on each and ever repo, so every repo must be sub-channel"
+    }
+  ]
+}
