@@ -1,0 +1,15 @@
+{
+  "type": "conversation",
+  "title": "Checker tests",
+  "subtitle": "Worker sub-channel run by an Agents Hub task",
+  "messages": [
+    {
+      "role": "user",
+      "content": "deploy me you first task and show"
+    },
+    {
+      "role": "assistant",
+      "content": "I opened this sub-channel for the first worker task: tests for the structure checker. The task's pull request link goes in output/ when it finishes."
+    }
+  ]
+}
