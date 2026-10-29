@@ -71,6 +71,7 @@ Rules:
 - A conversation can have a chat log beside it: `<name>.log.jsonl` next to `<name>.json`. The hub's chat box writes it (see README), one turn per line, each a JSON object with `role` of `user` or `assistant` and string `content` (plus optional `id`, `author`, `time`, `links`). Append to these logs rather than folding turns back into the `.json`. **(checked: matching `.json` exists, every line is a valid turn, link paths exist)**
 - A channel holds only README.md, conversations and their logs, `inputs/`, `output/`, and sub-channels. A sub-channel has the same shape but cannot hold sub-channels of its own, so Chat is at most two channel levels deep. **(checked)**
 - A sub-channel's README also has an `## Owner` section naming who opened it: a GitHub login or an agent name, such as `euler`. Its parent channel must have a README. **(checked)**
+- A sub-channel run by a worker agent has a `## Worker` section with text under it: the title of the Agents Hub task that runs it. **(checked)**
 - Any channel README may have a `## Status` section whose first line is `Open` or `Done`. No section means Open. **(checked)**
 
 Example channel README:
@@ -92,6 +93,16 @@ Slides
 The goal is many messages in few channels: conversation should be rich, and the channel list short. People and agents both start work, so the same rules apply to both.
 
 **Sub-channels are worker threads.** When part of a channel's work needs its own output, whoever takes it on (a person or an agent) opens `Chat/<channel>/<sub-channel>/` with an `## Owner`, an `## Input` scoped to that piece, and an `## Output format`. The owner works there and writes the output. The parent channel's output links to or folds in each sub-channel's output, so the parent stays the one place to see the whole workstream. A personal channel is where someone manages their own workers: its sub-channels are the threads they or their agents run.
+
+**Worker agents are Agents Hub tasks.** The workers are tasks on the Agents Hub: each runs in its own sandbox and can work on GitHub. A worker sub-channel ties one task to the repo:
+
+1. **Open.** Create the sub-channel with `## Owner` (who asked for the work), `## Worker` (the task title, which is `<channel>/<sub-channel>` so the task can be found by title), `## Input`, and `## Output format`. Code work usually takes GitHub URL.
+2. **Start.** Start the task with the sub-channel's Input as its text, and record in the sub-channel's `chat.log.jsonl` that it started.
+3. **Follow.** Questions and follow-ups go in the sub-channel's conversation and are sent to the task once it is no longer running. Check on it when someone asks or on the next reply run; do not poll.
+4. **Collect.** When the task is done, write its summary to the conversation and its main link (usually the pull request) to `output/`. If it failed, record the error and either send a follow-up or start a new task.
+5. **Close.** Hub task results disappear when the task is torn down, so tear it down only after step 4. Then set `## Status` to Done and fold the sub-channel into its parent.
+
+The Agents Hub address and token never go in this repository.
 
 **Before opening anything, reuse.** In this order:
 

@@ -228,6 +228,8 @@ def check_channel_readme(path, text, is_sub):
     sections = markdown_sections(text)
     if is_sub and not sections.get("Owner"):
         fail(path, 'sub-channel README needs an "## Owner" section: the GitHub login or agent that opened it')
+    if "Worker" in sections and not sections["Worker"]:
+        fail(path, '"## Worker" needs text: the Agents Hub task title that runs this sub-channel')
     status = sections.get("Status")
     if status is not None and (not status or status[0].lower() not in CHANNEL_STATUSES):
         fail(path, '"## Status" must be Open or Done')
