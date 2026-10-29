@@ -4,19 +4,31 @@ A small, filesystem-first workspace for quirqy, viewed with [open-chat](https://
 
 ## Five places, five examples
 
-- **Chat** — one saved conversation: Chat/index.json.
+- **Chat** — channels: one folder per workstream or person, each with an input, its conversation, and an output: Chat/hello-world/.
 - **Activity** — one feed event: Activity/example.jsonl.
 - **Insights** — one insight card: Insights/index.json.
 - **Vision** — one short direction document: Vision/example.md.
 - **Library** — one website shortcut: Library/example.url.
 
-Each section contains only its README and one example. This root README explains the workspace; LICENSE retains the repository's existing license. No generated logs, nested example directories, or duplicate welcome screens are included.
+Each section holds its README plus its content files. The rules for adding, naming, and formatting files are in [CONTRIBUTING.md](CONTRIBUTING.md), and a CI check enforces them on every pull request.
 
 ## Open this workspace
 
 Run open-chat locally, click the quirqy name, browse to this directory, and choose **Observe this folder**. If the directory is outside the picker's boundary, set MIRROR_BROWSE_ROOT in the app's .env.local to its parent directory. Alternatively, set MIRROR_ROOT to this directory before starting the app.
 
-For the local sample copy, select D:/XO/quirq/swarm-desktop/sample. Select the sample folder itself so links in the examples resolve from this root. The dock in the current open-chat version orders these sections as Chat, Activity, Insights, Vision, Library.
+Select the root of this repository itself so the links in the examples, which are relative to the root, resolve. The dock in the current open-chat version orders these sections as Chat, Activity, Insights, Vision, Library.
+
+## On the hub
+
+This workspace is also the project [quirq/quirq](https://hub.quirq.dev/quirq/quirq) on hub.quirq.dev, in the `quirq` space. Its **Files** tab shows the sections the way open-chat does, and members of the space can type into any conversation: each message is appended to the `.log.jsonl` beside it and committed for them. To work on it with plain git, install the spacehub CLI, run `spacehub auth login`, then:
+
+```sh
+git remote add quirq quirq://hub.quirq.dev/quirq/quirq
+git pull --no-rebase quirq main
+git push quirq main
+```
+
+CONTRIBUTING.md says how the hub and GitHub stay in step.
 
 ## Change what you see
 

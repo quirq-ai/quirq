@@ -1,0 +1,11 @@
+{
+  "type": "conversation",
+  "title": "suraj's channel",
+  "subtitle": "A personal channel. Type below to start.",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "This is your personal channel. Drop files into inputs/ or ask here, and the result goes to output/."
+    }
+  ]
+}
