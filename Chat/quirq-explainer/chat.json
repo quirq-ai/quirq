@@ -1,0 +1,17 @@
+{
+  "type": "conversation",
+  "title": "Build an interactive quirq explainer",
+  "subtitle": "Opened by suraj, 2026-10-29",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "This channel builds an iso-glow style interactive explainer for quirq. The reference is in inputs; the discussion continues below.",
+      "links": [
+        {
+          "label": "Reference: iso-glow anatomy demo",
+          "path": "Chat/quirq-explainer/inputs/isoglow-anatomy-demo.url"
+        }
+      ]
+    }
+  ]
+}
