@@ -1,0 +1,15 @@
+{
+  "type": "conversation",
+  "title": "Simulator wiki",
+  "subtitle": "Worker sub-channel run by an Agents Hub task",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Spin up a new worker to create me a wiki that explains what it is."
+    },
+    {
+      "role": "assistant",
+      "content": "I opened this sub-channel for the worker task tanker-mooring-simulator/wiki. The wiki goes in output/index.html when it finishes."
+    }
+  ]
+}
