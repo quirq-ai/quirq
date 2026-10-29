@@ -35,16 +35,16 @@ ROOT_DIRS = {".github"} | set(SECTIONS)
 
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.[a-z]+$")
 SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-# Chat is the one nested section: Chat/<username>/tasks/<task-name>/ holds
-# README.md, chats/*.json (and their *.log.jsonl), sources/, and
-# outcome/<file for the output format>.
-TASK_DEPTH = 5
-# Files dropped straight into Chat/<username>/ wait there until Claude sorts
-# them into tasks. They and a task's sources/ may be any type, so they skip
-# the text checks and only have a larger size limit.
-INBOX_DEPTH = 3
+# Chat is the one nested section: each channel is Chat/<channel>/ and holds
+# README.md, conversations (*.json and their *.log.jsonl), inputs/, and
+# output/<file for the output format>.
+CHANNEL_DEPTH = 3
+# Files dropped straight into Chat/ wait there until Claude sorts them into
+# channels. They and a channel's inputs/ may be any type, so they skip the
+# text checks and only have a larger size limit.
+INBOX_DEPTH = 2
 MAX_FREE_FORM_BYTES = 25_000_000
-# Output format (first line of "## Output format", any case) -> outcome file.
+# Output format (first line of "## Output format", any case) -> output file.
 OUTPUT_FORMATS = {
     "slides": "slides.md",
     "one pager": "one-pager.md",
@@ -62,7 +62,7 @@ MAX_BYTES = 1_000_000
 ACTIVITY_KEYS = ("author", "type", "title", "content")
 CHAT_ROLES = {"user", "assistant"}
 # The hub's chat box (hub.quirq.dev) appends new turns to
-# chats/<name>.log.jsonl beside chats/<name>.json, one JSON object per line.
+# <name>.log.jsonl beside <name>.json, one JSON object per line.
 CHAT_LOG_SUFFIX = ".log.jsonl"
 
 errors = []
@@ -218,15 +218,15 @@ def markdown_sections(text):
     return sections
 
 
-def check_task_readme(path, text):
-    """Check a task README and return its output format, or None."""
+def check_channel_readme(path, text):
+    """Check a channel README and return its output format, or None."""
     check_markdown(path, text)
     sections = markdown_sections(text)
-    if not sections.get("Goal"):
-        fail(path, 'task README needs a "## Goal" section with text under it')
+    if not sections.get("Input"):
+        fail(path, 'channel README needs an "## Input" section with text under it')
     output = sections.get("Output format")
     if not output:
-        fail(path, f'task README needs a "## Output format" section: one of {FORMAT_NAMES}')
+        fail(path, f'channel README needs an "## Output format" section: one of {FORMAT_NAMES}')
         return None
     if output[0].lower() not in OUTPUT_FORMATS:
         fail(path, f"output format {output[0]!r} is not one of {FORMAT_NAMES}")
@@ -235,64 +235,58 @@ def check_task_readme(path, text):
 
 
 def check_free_form(path, inbox):
-    """Check an inbox file or a task source; return False if path is neither."""
+    """Check an inbox file or a channel input; return False if path is neither."""
     parts = path.parts
     is_inbox = len(parts) == INBOX_DEPTH and path.name != "README.md"
-    is_source = len(parts) == TASK_DEPTH + 1 and parts[2] == "tasks" and parts[4] == "sources"
-    if not (is_inbox or is_source):
+    is_input = len(parts) == CHANNEL_DEPTH + 1 and parts[2] == "inputs"
+    if not (is_inbox or is_input):
         return False
-    if not SLUG_RE.match(parts[1]):
-        fail(path, f"folder {parts[1]!r} must be lowercase kebab-case")
     if (ROOT / path).stat().st_size > MAX_FREE_FORM_BYTES:
         fail(path, f"larger than {MAX_FREE_FORM_BYTES} bytes")
     if is_inbox:
         inbox.append(path)
-    elif not SLUG_RE.match(parts[3]):
-        fail(path, f"folder {parts[3]!r} must be lowercase kebab-case")
+    elif not SLUG_RE.match(parts[1]):
+        fail(path, f"channel {parts[1]!r} must be lowercase kebab-case")
     elif not NAME_RE.match(path.name):
-        fail(path, "sorted source files are lowercase kebab-case, e.g. pricing-notes.pdf")
+        fail(path, "input files are lowercase kebab-case, e.g. pricing-notes.pdf")
     return True
 
 
-def check_chat_layout(path, text, tasks):
-    """Check one file under Chat/ against the task layout.
+def check_chat_layout(path, text, channels):
+    """Check one file under Chat/ against the channel layout.
 
-    Returns True when the file is a saved chat that still needs its
-    content checked. Outcome files are collected in tasks and checked once
-    the task's output format is known.
+    Returns True when the file is a conversation that still needs its
+    content checked. Output files are collected in channels and checked
+    once the channel's output format is known.
     """
     parts = path.parts
     if len(parts) == 2 and path.name == "README.md":
         check_markdown(path, text)
         return False
-    if len(parts) < TASK_DEPTH or parts[2] != "tasks":
-        fail(path, "Chat files go in Chat/<username>/tasks/<task-name>/")
+    if not SLUG_RE.match(parts[1]):
+        fail(path, f"channel {parts[1]!r} must be lowercase kebab-case")
         return False
-    for slug in (parts[1], parts[3]):
-        if not SLUG_RE.match(slug):
-            fail(path, f"folder {slug!r} must be lowercase kebab-case")
+    channel = channels.setdefault(Path(*parts[:2]), {"readme": False, "format": None, "output": []})
+    if len(parts) == CHANNEL_DEPTH:
+        if path.name == "README.md":
+            channel["readme"] = True
+            channel["format"] = check_channel_readme(path, text)
             return False
-    task = tasks.setdefault(Path(*parts[:4]), {"readme": False, "format": None, "outcome": []})
-    if len(parts) == TASK_DEPTH and path.name == "README.md":
-        task["readme"] = True
-        task["format"] = check_task_readme(path, text)
-        return False
-    if len(parts) == TASK_DEPTH + 1 and parts[4] == "chats":
         if path.name.endswith(CHAT_LOG_SUFFIX):
             check_chat_log(path, text)
             return False
         return True
-    if len(parts) == TASK_DEPTH + 1 and parts[4] == "outcome":
-        task["outcome"].append((path, text))
+    if len(parts) == CHANNEL_DEPTH + 1 and parts[2] == "output":
+        channel["output"].append((path, text))
         return False
-    fail(path, "a task folder holds only README.md, chats/*.json, sources/, and outcome/")
+    fail(path, "a channel holds only README.md, conversations, inputs/, and output/")
     return False
 
 
-def check_outcome(path, text, output_format):
+def check_output(path, text, output_format):
     expected = OUTPUT_FORMATS[output_format]
     if path.name != expected:
-        fail(path, f"the outcome for this task's output format is outcome/{expected}")
+        fail(path, f"the output for this channel's output format is output/{expected}")
     elif expected == "github.url":
         lines = [l for l in text.splitlines() if l.strip()]
         if len(lines) != 1 or not GITHUB_URL_RE.match(lines[0]):
@@ -306,14 +300,14 @@ def check_outcome(path, text, output_format):
             fail(path, 'slides are separated by a line containing only "---"')
 
 
-def check_tasks(tasks):
-    for task_dir, task in sorted(tasks.items()):
-        if not task["readme"]:
-            fail(task_dir, "task folder is missing its README.md")
-        if task["format"] is None:
+def check_channels(channels):
+    for channel_dir, channel in sorted(channels.items()):
+        if not channel["readme"]:
+            fail(channel_dir, "channel is missing its README.md")
+        if channel["format"] is None:
             continue
-        for path, text in task["outcome"]:
-            check_outcome(path, text, task["format"])
+        for path, text in channel["output"]:
+            check_output(path, text, channel["format"])
 
 
 def check_content(path, text):
@@ -341,7 +335,7 @@ def check_content(path, text):
 def main():
     files = tracked_files()
     seen_sections = set()
-    chat_tasks = {}
+    chat_channels = {}
     inbox = []
 
     for path in files:
@@ -364,7 +358,7 @@ def main():
 
         seen_sections.add(top)
         if top == "Chat":
-            if not check_chat_layout(path, text, chat_tasks):
+            if not check_chat_layout(path, text, chat_channels):
                 continue
         elif len(path.parts) != 2:
             fail(path, "sections are flat; no subfolders")
@@ -380,14 +374,14 @@ def main():
             continue
         check_content(path, text)
 
-    check_tasks(chat_tasks)
+    check_channels(chat_channels)
 
     for section in SECTIONS:
         if section not in seen_sections or not (ROOT / section / "README.md").is_file():
             fail(Path(section), "section is missing its README.md")
 
     if inbox:
-        print(f"Note: {len(inbox)} unsorted file(s) waiting in Chat/<username>/ for triage:")
+        print(f"Note: {len(inbox)} unsorted file(s) waiting in Chat/ to be sorted into channels:")
         for path in inbox:
             print(f"  {path}")
 
