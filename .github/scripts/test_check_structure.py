@@ -87,6 +87,12 @@ class StructureCheckerTests(unittest.TestCase):
             'Chat/project/research/README.md: sub-channel README needs an "## Owner" section'
         )
 
+    def test_agent_channel_is_named_after_its_agent(self):
+        self.write("Chat/scout/README.md", self.readme() + "\n## Agent\nscout\n")
+        self.assertEqual(self.run_checker().returncode, 0)
+        self.write("Chat/scout/README.md", self.readme() + "\n## Agent\nrover\n")
+        self.assert_problem('Chat/scout/README.md: "## Agent" marks an agent\'s own channel')
+
     def test_output_format_must_be_supported(self):
         self.write("Chat/project/README.md", self.readme(output_format="PDF"))
         self.assert_problem(

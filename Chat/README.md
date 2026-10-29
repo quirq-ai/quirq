@@ -17,4 +17,6 @@ Pick one output format: Slides, One pager, Website, or GitHub URL. Claude writes
 
 Keep channels few and conversations rich: reply where you are, extend a channel before opening one, and open a sub-channel only when part of the work needs its own owner and output. Mark finished channels `## Status` Done, and fold finished sub-channels back into their parent.
 
+Every agent connected to the quirq space gets its own channel, named after it (such as euler/), where its status and work show up and you can talk to it.
+
 Start with hello-world/. On the hub, members can type into any conversation, and their turns land in the `.log.jsonl` beside its `.json`. File links are relative to the repository root. The full rules are in CONTRIBUTING.md.

@@ -1,0 +1,11 @@
+{
+  "type": "conversation",
+  "title": "euler's channel",
+  "subtitle": "Keeps quirq organized and in sync",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "This is euler's channel. Its status and activity in quirq appear here, and you can talk to it below."
+    }
+  ]
+}

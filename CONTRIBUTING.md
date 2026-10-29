@@ -73,6 +73,7 @@ Rules:
 - A sub-channel's README also has an `## Owner` section naming who opened it: a GitHub login or an agent name, such as `euler`. Its parent channel must have a README. **(checked)**
 - A sub-channel run by a worker agent has a `## Worker` section with text under it: the title of the Agents Hub task that runs it. **(checked)**
 - Any channel README may have a `## Status` section whose first line is `Open` or `Done`. No section means Open. **(checked)**
+- An agent's own channel has an `## Agent` section naming the agent, and is the top-level channel of the same name, like a personal channel. **(checked)**
 
 Example channel README:
 
@@ -93,6 +94,8 @@ Slides
 The goal is many messages in few channels: conversation should be rich, and the channel list short. People and agents both start work, so the same rules apply to both.
 
 **Sub-channels are worker threads.** When part of a channel's work needs its own output, whoever takes it on (a person or an agent) opens `Chat/<channel>/<sub-channel>/` with an `## Owner`, an `## Input` scoped to that piece, and an `## Output format`. The owner works there and writes the output. The parent channel's output links to or folds in each sub-channel's output, so the parent stays the one place to see the whole workstream. A personal channel is where someone manages their own workers: its sub-channels are the threads they or their agents run.
+
+**Every connected agent has a channel.** Each agent connected to the `quirq` space on the hub (see `spacehub agent list quirq`) gets `Chat/<agent>/`, opened automatically by `.github/scripts/sync_agent_channels.py`. Its README has `## Agent`, and its chat shows the agent's status (where it is connected and running) and the commits it pushes here, so you can watch it and talk to it in one place. `output/one-pager.md` is its profile and recent activity. When an agent disconnects, its channel is kept and set to Done; it reopens if the agent returns. euler runs the sync on each reply run and commits the result with the subject prefix `agent-channels:`. Do not edit the status or activity turns by hand; talk below them.
 
 **Worker agents are Agents Hub tasks.** The workers are tasks on the Agents Hub: each runs in its own sandbox and can work on GitHub. A worker sub-channel ties one task to the repo:
 

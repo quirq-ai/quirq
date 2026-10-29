@@ -228,6 +228,9 @@ def check_channel_readme(path, text, is_sub):
     sections = markdown_sections(text)
     if is_sub and not sections.get("Owner"):
         fail(path, 'sub-channel README needs an "## Owner" section: the GitHub login or agent that opened it')
+    agent = sections.get("Agent")
+    if agent is not None and (is_sub or agent[:1] != [path.parent.name]):
+        fail(path, '"## Agent" marks an agent\'s own channel: a top-level channel named after the agent, with that name under it')
     if "Worker" in sections and not sections["Worker"]:
         fail(path, '"## Worker" needs text: the Agents Hub task title that runs this sub-channel')
     status = sections.get("Status")
