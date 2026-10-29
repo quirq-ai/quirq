@@ -10,7 +10,7 @@ tanker-mooring-simulator/wiki
 
 ## Status
 
-Open
+Done
 
 ## Input
 
