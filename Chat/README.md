@@ -10,8 +10,11 @@ Chat/
     chat.json       the conversation (+ chat.log.jsonl, where the hub appends turns)
     inputs/         files for this channel, any type
     output/         what Claude produces from all of the above
+    <sub-channel>/  a worker thread a person or agent opens, same shape plus "## Owner"
 ```
 
 Pick one output format: Slides, One pager, Website, or GitHub URL. Claude writes the result to `output/` as `slides.md`, `one-pager.md`, `index.html`, or `github.url`. Channel names are lowercase kebab-case.
+
+Keep channels few and conversations rich: reply where you are, extend a channel before opening one, and open a sub-channel only when part of the work needs its own owner and output. Mark finished channels `## Status` Done, and fold finished sub-channels back into their parent.
 
 Start with hello-world/. On the hub, members can type into any conversation, and their turns land in the `.log.jsonl` beside its `.json`. File links are relative to the repository root. The full rules are in CONTRIBUTING.md.

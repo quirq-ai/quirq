@@ -36,13 +36,17 @@ ROOT_DIRS = {".github"} | set(SECTIONS)
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.[a-z]+$")
 SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 # Chat is the one nested section: each channel is Chat/<channel>/ and holds
-# README.md, conversations (*.json and their *.log.jsonl), inputs/, and
-# output/<file for the output format>.
-CHANNEL_DEPTH = 3
+# README.md, conversations (*.json and their *.log.jsonl), inputs/,
+# output/<file for the output format>, and sub-channels: worker threads that
+# a person or an agent opens as Chat/<channel>/<sub-channel>/, with the same
+# shape. Sub-channels go one level deep.
+CHANNEL_PARTS = {"inputs", "output"}
+MAX_CHANNEL_LEVELS = 2
+# "## Status" in a channel README, when present.
+CHANNEL_STATUSES = {"open", "done"}
 # Files dropped straight into Chat/ wait there until Claude sorts them into
 # channels. They and a channel's inputs/ may be any type, so they skip the
 # text checks and only have a larger size limit.
-INBOX_DEPTH = 2
 MAX_FREE_FORM_BYTES = 25_000_000
 # Output format (first line of "## Output format", any case) -> output file.
 OUTPUT_FORMATS = {
@@ -218,10 +222,15 @@ def markdown_sections(text):
     return sections
 
 
-def check_channel_readme(path, text):
+def check_channel_readme(path, text, is_sub):
     """Check a channel README and return its output format, or None."""
     check_markdown(path, text)
     sections = markdown_sections(text)
+    if is_sub and not sections.get("Owner"):
+        fail(path, 'sub-channel README needs an "## Owner" section: the GitHub login or agent that opened it')
+    status = sections.get("Status")
+    if status is not None and (not status or status[0].lower() not in CHANNEL_STATUSES):
+        fail(path, '"## Status" must be Open or Done')
     if not sections.get("Input"):
         fail(path, 'channel README needs an "## Input" section with text under it')
     output = sections.get("Output format")
@@ -234,19 +243,45 @@ def check_channel_readme(path, text):
     return output[0].lower()
 
 
+def split_channel(path):
+    """Split a path under Chat/ into (channel folder, path inside it).
+
+    Returns None for Chat/README.md and inbox files directly in Chat/.
+    """
+    parts = path.parts
+    if len(parts) <= 2:
+        return None
+    level = 2
+    while (
+        len(parts) > level + 1
+        and parts[level] not in CHANNEL_PARTS
+        and level - 1 < MAX_CHANNEL_LEVELS
+    ):
+        level += 1
+    return Path(*parts[:level]), parts[level:]
+
+
+def check_channel_names(path, channel_dir):
+    for name in channel_dir.parts[1:]:
+        if not SLUG_RE.match(name):
+            fail(path, f"channel {name!r} must be lowercase kebab-case")
+            return False
+    return True
+
+
 def check_free_form(path, inbox):
     """Check an inbox file or a channel input; return False if path is neither."""
-    parts = path.parts
-    is_inbox = len(parts) == INBOX_DEPTH and path.name != "README.md"
-    is_input = len(parts) == CHANNEL_DEPTH + 1 and parts[2] == "inputs"
+    split = split_channel(path)
+    is_inbox = split is None and path.name != "README.md"
+    is_input = split is not None and len(split[1]) == 2 and split[1][0] == "inputs"
     if not (is_inbox or is_input):
         return False
     if (ROOT / path).stat().st_size > MAX_FREE_FORM_BYTES:
         fail(path, f"larger than {MAX_FREE_FORM_BYTES} bytes")
     if is_inbox:
         inbox.append(path)
-    elif not SLUG_RE.match(parts[1]):
-        fail(path, f"channel {parts[1]!r} must be lowercase kebab-case")
+    elif not check_channel_names(path, split[0]):
+        pass
     elif not NAME_RE.match(path.name):
         fail(path, "input files are lowercase kebab-case, e.g. pricing-notes.pdf")
     return True
@@ -259,27 +294,27 @@ def check_chat_layout(path, text, channels):
     content checked. Output files are collected in channels and checked
     once the channel's output format is known.
     """
-    parts = path.parts
-    if len(parts) == 2 and path.name == "README.md":
+    split = split_channel(path)
+    if split is None:
         check_markdown(path, text)
         return False
-    if not SLUG_RE.match(parts[1]):
-        fail(path, f"channel {parts[1]!r} must be lowercase kebab-case")
+    channel_dir, rest = split
+    if not check_channel_names(path, channel_dir):
         return False
-    channel = channels.setdefault(Path(*parts[:2]), {"readme": False, "format": None, "output": []})
-    if len(parts) == CHANNEL_DEPTH:
+    channel = channels.setdefault(channel_dir, {"readme": False, "format": None, "output": []})
+    if len(rest) == 1:
         if path.name == "README.md":
             channel["readme"] = True
-            channel["format"] = check_channel_readme(path, text)
+            channel["format"] = check_channel_readme(path, text, len(channel_dir.parts) > 2)
             return False
         if path.name.endswith(CHAT_LOG_SUFFIX):
             check_chat_log(path, text)
             return False
         return True
-    if len(parts) == CHANNEL_DEPTH + 1 and parts[2] == "output":
+    if len(rest) == 2 and rest[0] == "output":
         channel["output"].append((path, text))
         return False
-    fail(path, "a channel holds only README.md, conversations, inputs/, and output/")
+    fail(path, "a channel holds only README.md, conversations, inputs/, output/, and sub-channels one level deep")
     return False
 
 
@@ -304,6 +339,8 @@ def check_channels(channels):
     for channel_dir, channel in sorted(channels.items()):
         if not channel["readme"]:
             fail(channel_dir, "channel is missing its README.md")
+        if len(channel_dir.parts) > 2 and channel_dir.parent not in channels:
+            fail(channel_dir, "sub-channel's parent channel has no README.md")
         if channel["format"] is None:
             continue
         for path, text in channel["output"]:

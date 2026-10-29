@@ -41,6 +41,7 @@ Chat/
     chat.json         the conversation (+ chat.log.jsonl from the hub's chat box)
     inputs/           files for this channel, any type
     output/           what Claude produced, in the channel's output format
+    <sub-channel>/    a worker thread: same shape, plus "## Owner" in its README
 ```
 
 The flow is input, then action, then output:
@@ -68,7 +69,9 @@ Rules:
 - `output/` holds only the file for the channel's format, and it may be absent until the output is generated. **(checked)**
 - Inbox files directly under `Chat/` and files in `inputs/` can be any type up to 25 MB. `inputs/` files use lowercase kebab-case names. **(checked)**
 - A conversation can have a chat log beside it: `<name>.log.jsonl` next to `<name>.json`. The hub's chat box writes it (see README), one turn per line, each a JSON object with `role` of `user` or `assistant` and string `content` (plus optional `id`, `author`, `time`, `links`). Append to these logs rather than folding turns back into the `.json`. **(checked: matching `.json` exists, every line is a valid turn, link paths exist)**
-- A channel holds only README.md, conversations and their logs, `inputs/`, and `output/`. No deeper folders. **(checked)**
+- A channel holds only README.md, conversations and their logs, `inputs/`, `output/`, and sub-channels. A sub-channel has the same shape but cannot hold sub-channels of its own, so Chat is at most two channel levels deep. **(checked)**
+- A sub-channel's README also has an `## Owner` section naming who opened it: a GitHub login or an agent name, such as `euler`. Its parent channel must have a README. **(checked)**
+- Any channel README may have a `## Status` section whose first line is `Open` or `Done`. No section means Open. **(checked)**
 
 Example channel README:
 
@@ -83,6 +86,35 @@ Agree on the launch date, owners, and the three announcements.
 
 Slides
 ```
+
+### Working in channels
+
+The goal is many messages in few channels: conversation should be rich, and the channel list short. People and agents both start work, so the same rules apply to both.
+
+**Sub-channels are worker threads.** When part of a channel's work needs its own output, whoever takes it on (a person or an agent) opens `Chat/<channel>/<sub-channel>/` with an `## Owner`, an `## Input` scoped to that piece, and an `## Output format`. The owner works there and writes the output. The parent channel's output links to or folds in each sub-channel's output, so the parent stays the one place to see the whole workstream. A personal channel is where someone manages their own workers: its sub-channels are the threads they or their agents run.
+
+**Before opening anything, reuse.** In this order:
+
+1. **Reply in place.** A message goes in the channel it was posted in, even if it fits better elsewhere; answer it and link the better channel.
+2. **Extend a channel.** If an existing channel's Input covers the ask, or covers it with a sentence added, add the sentence and keep working there.
+3. **Open a sub-channel** only when part of a channel needs a separate output and a separate owner.
+4. **Open a channel** only for a new deliverable that no channel's Input covers.
+
+**Keep the list short.**
+
+- **Merge** two channels when they head to the same output: move the conversations and inputs into the older one, regenerate its output, and delete the other.
+- **Finish** a channel when its output is delivered and nobody is waiting on it: set `## Status` to `Done`. A message in a Done channel reopens it.
+- **Fold** a Done sub-channel back into its parent: move its conversations and inputs up (rename on clashes), put its output into the parent's, and delete the folder.
+
+### How euler replies
+
+euler replies to every new message in a hub chat, in the same conversation, in under 150 words, with three parts in this order:
+
+1. **The answer or result**, in one line.
+2. **What changed**, with links (root-relative paths) to the files, output, or sub-channel it touched. Leave this out when nothing changed.
+3. **The next step**, or one question, so the conversation keeps going.
+
+When a reply opens, merges, or finishes a channel or sub-channel, it says so in part 2.
 
 - Tooling, scripts, and schemas live under `.github/`, never in the content folders or at the top level, so the app does not show them.
 
