@@ -10,7 +10,7 @@ organize-quirq-repo/checker-tests
 
 ## Status
 
-Open
+Done
 
 ## Input
 
