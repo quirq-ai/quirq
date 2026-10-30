@@ -23,7 +23,7 @@ class StructureCheckerTests(unittest.TestCase):
             self.write(f"{section}/README.md", f"# {section}\n")
         self.write("Vision/project-plan.md", "# Project plan\n")
         self.write("Chat/project/README.md", self.readme())
-        self.write("Chat/project/research/README.md", self.readme(owner=True))
+        self.write("Chat/project/research/README.md", self.readme())
 
     def git(self, *args):
         return subprocess.run(
@@ -35,7 +35,7 @@ class StructureCheckerTests(unittest.TestCase):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
 
-    def readme(self, output_format="One pager", status="Open", owner=False):
+    def readme(self, output_format="One pager", status="Open", owner=True):
         text = (
             "# Project\n\n## Input\nResearch the project.\n"
             f"\n## Output format\n{output_format}\n\n## Status\n{status}\n"
@@ -69,7 +69,7 @@ class StructureCheckerTests(unittest.TestCase):
             "GitHub URL": ("github.url", "https://github.com/quirq-ai/quirq\n"),
         }
         for output_format, (filename, content) in outputs.items():
-            for status in ("Open", "Done"):
+            for status in ("Open", "Waiting", "Done"):
                 with self.subTest(output_format=output_format, status=status):
                     output = self.root / "Chat/project/output"
                     if output.exists():
@@ -81,14 +81,16 @@ class StructureCheckerTests(unittest.TestCase):
                     self.assertIn("Structure OK", result.stdout)
                     self.assertEqual(result.stderr, "")
 
-    def test_sub_channel_requires_owner(self):
-        self.write("Chat/project/research/README.md", self.readme())
-        self.assert_problem(
-            'Chat/project/research/README.md: sub-channel README needs an "## Owner" section'
-        )
+    def test_channels_require_owner(self):
+        for path in ("Chat/project/README.md", "Chat/project/research/README.md"):
+            with self.subTest(path=path):
+                self.write("Chat/project/README.md", self.readme())
+                self.write("Chat/project/research/README.md", self.readme())
+                self.write(path, self.readme(owner=False))
+                self.assert_problem(f'{path}: channel README needs an "## Owner" section')
 
     def test_agent_channel_is_named_after_its_agent(self):
-        self.write("Chat/scout/README.md", self.readme() + "\n## Agent\nscout\n")
+        self.write("Chat/scout/README.md", self.readme(owner=False) + "\n## Agent\nscout\n")
         self.assertEqual(self.run_checker().returncode, 0)
         self.write("Chat/scout/README.md", self.readme() + "\n## Agent\nrover\n")
         self.assert_problem('Chat/scout/README.md: "## Agent" marks an agent\'s own channel')
@@ -100,9 +102,9 @@ class StructureCheckerTests(unittest.TestCase):
             "Slides, One pager, Website, GitHub URL"
         )
 
-    def test_status_must_be_open_or_done(self):
+    def test_status_must_be_open_waiting_or_done(self):
         self.write("Chat/project/README.md", self.readme(status="In progress"))
-        self.assert_problem('Chat/project/README.md: "## Status" must be Open or Done')
+        self.assert_problem('Chat/project/README.md: "## Status" must be Open, Waiting, or Done')
 
     def test_content_filename_must_be_kebab_case(self):
         (self.root / "Vision/project-plan.md").rename(self.root / "Vision/Project_Plan.md")
