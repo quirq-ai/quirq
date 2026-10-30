@@ -1,6 +1,6 @@
 # Keeping quirq organized
 
-This repository is content for open-chat, not code. The app reads these files directly, so the layout below is the contract. `.github/scripts/check_structure.py` enforces every rule marked **(checked)**, and the Structure workflow runs it on each pull request and on pushes to `main`.
+This repository is content for open-chat, not code. The app reads these files directly, so the layout below is the contract. `.github/scripts/check_structure.py` enforces every rule marked **(checked)**, and the Structure workflow runs it on each pull request and on pushes to `main`. `.github/scripts/space_doctor.py` lists the upkeep the rules ask for (see Running itself).
 
 Run it locally before you push:
 
@@ -37,11 +37,11 @@ Chat/
   README.md
   <any file>          inbox: drop anything here; Claude sorts it into a channel
   <channel>/
-    README.md         "# Title", then "## Input" and "## Output format"
+    README.md         "# Title", then "## Owner", "## Input" and "## Output format"
     chat.json         the conversation (+ chat.log.jsonl from the hub's chat box)
     inputs/           files for this channel, any type
     output/           what Claude produced, in the channel's output format
-    <sub-channel>/    a worker thread: same shape, plus "## Owner" in its README
+    <sub-channel>/    a worker thread: same shape
 ```
 
 The flow is input, then action, then output:
@@ -70,15 +70,20 @@ Rules:
 - Inbox files directly under `Chat/` and files in `inputs/` can be any type up to 25 MB. `inputs/` files use lowercase kebab-case names. **(checked)**
 - A conversation can have a chat log beside it: `<name>.log.jsonl` next to `<name>.json`. The hub's chat box writes it (see README), one turn per line, each a JSON object with `role` of `user` or `assistant` and string `content` (plus optional `id`, `author`, `time`, `links`). Append to these logs rather than folding turns back into the `.json`. **(checked: matching `.json` exists, every line is a valid turn, link paths exist)**
 - A channel holds only README.md, conversations and their logs, `inputs/`, `output/`, and sub-channels. A sub-channel has the same shape but cannot hold sub-channels of its own, so Chat is at most two channel levels deep. **(checked)**
-- A sub-channel's README also has an `## Owner` section naming who opened it: a GitHub login or an agent name, such as `euler`. Its parent channel must have a README. **(checked)**
+- Every channel README has an `## Owner` section naming who opened it and answers for it: a GitHub login or an agent name, such as `euler`. A personal channel is owned by its person; an agent's own channel (below) may leave it out, since the agent owns it. **(checked)**
+- A sub-channel's parent channel must have a README. **(checked)**
 - A sub-channel run by a worker agent has a `## Worker` section with text under it: the title of the Agents Hub task that runs it. **(checked)**
-- Any channel README may have a `## Status` section whose first line is `Open` or `Done`. No section means Open. **(checked)**
+- Any channel README may have a `## Status` section whose first line is `Open`, `Waiting`, or `Done`. No section means Open. Waiting means the channel is blocked on one person, and the last turn of its chat is the question, with a recommended default. **(checked)**
 - An agent's own channel has an `## Agent` section naming the agent, and is the top-level channel of the same name, like a personal channel. **(checked)**
 
 Example channel README:
 
 ```markdown
 # Plan Q4 launch
+
+## Owner
+
+sharmasuraj0123
 
 ## Input
 
@@ -129,6 +134,41 @@ euler replies to every new message in a hub chat, in the same conversation, in u
 3. **The next step**, or one question, so the conversation keeps going.
 
 When a reply opens, merges, or finishes a channel or sub-channel, it says so in part 2.
+
+### Running itself
+
+The workspace is kept by one loop that euler runs on every reply run, without asking anyone. `.github/scripts/check_structure.py` says whether the repo is valid; `.github/scripts/space_doctor.py` says what upkeep it is owed right now, one task per line:
+
+| Task | Found when | What euler does |
+| --- | --- | --- |
+| `reply` | A conversation's latest turn is a user turn | Replies (see How euler replies) |
+| `sort-inbox` | A file sits directly in `Chat/` | Moves it into the best channel's `inputs/` |
+| `fold` | A sub-channel is Done | Folds it into its parent (see Keep the list short) |
+| `regenerate` | `inputs/` changed after the output | Regenerates the output |
+| `missing-output` | An Open channel has no output yet | Generates it |
+| `default` | A channel has been Waiting for 48 hours | Applies the recommended default, says so in the chat, sets Open |
+| `stale` | A shared channel had no commit for 14 days | Sets Done with a closing turn; any new message reopens it |
+
+Agent channels are kept by `sync_agent_channels.py`, so the doctor only lists replies for them. Personal channels never go stale.
+
+Each run, in order:
+
+1. Pull the hub's `main`.
+2. Run `sync_agent_channels.py`.
+3. Run `space_doctor.py` and clear its list, replies first. A task too big for one run becomes a worker sub-channel.
+4. Run `check_structure.py`. The hub has no CI, so this is the gate: fix or revert anything it reports before pushing.
+5. Push to the hub's `main`, then bring GitHub `main` up to it.
+
+**When to ask.** euler acts first and reports in its reply, except in four cases, which it asks suraj about in his personal channel (`Chat/sharmasuraj0123/`), one question per turn with a recommended default, setting the channel it blocks to Waiting:
+
+1. A step that cannot be undone, or anything outside this repository and the hub.
+2. A change to these rules or to the checker.
+3. A change to a channel's Input or Output format asked by someone other than its owner.
+4. The same task failing on two runs in a row.
+
+Everything else is reversible, so euler does it and reverts if it was wrong. When an Ask case has been answered the same way three times, change the rule here so it stops being asked.
+
+**What an agent may write.** An agent commits to its own channel and to channels where it is the Owner or the Worker, and anywhere else only to reply in place.
 
 - Tooling, scripts, and schemas live under `.github/`, never in the content folders or at the top level, so the app does not show them.
 

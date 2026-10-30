@@ -43,7 +43,8 @@ SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 CHANNEL_PARTS = {"inputs", "output"}
 MAX_CHANNEL_LEVELS = 2
 # "## Status" in a channel README, when present.
-CHANNEL_STATUSES = {"open", "done"}
+# Waiting means blocked on a named person (see "Running itself").
+CHANNEL_STATUSES = {"open", "waiting", "done"}
 # Files dropped straight into Chat/ wait there until Claude sorts them into
 # channels. They and a channel's inputs/ may be any type, so they skip the
 # text checks and only have a larger size limit.
@@ -226,16 +227,17 @@ def check_channel_readme(path, text, is_sub):
     """Check a channel README and return its output format, or None."""
     check_markdown(path, text)
     sections = markdown_sections(text)
-    if is_sub and not sections.get("Owner"):
-        fail(path, 'sub-channel README needs an "## Owner" section: the GitHub login or agent that opened it')
     agent = sections.get("Agent")
+    # An agent's own channel is owned by the agent it is named after.
+    if not sections.get("Owner") and (is_sub or agent is None):
+        fail(path, 'channel README needs an "## Owner" section: the GitHub login or agent that opened it')
     if agent is not None and (is_sub or agent[:1] != [path.parent.name]):
         fail(path, '"## Agent" marks an agent\'s own channel: a top-level channel named after the agent, with that name under it')
     if "Worker" in sections and not sections["Worker"]:
         fail(path, '"## Worker" needs text: the Agents Hub task title that runs this sub-channel')
     status = sections.get("Status")
     if status is not None and (not status or status[0].lower() not in CHANNEL_STATUSES):
-        fail(path, '"## Status" must be Open or Done')
+        fail(path, '"## Status" must be Open, Waiting, or Done')
     if not sections.get("Input"):
         fail(path, 'channel README needs an "## Input" section with text under it')
     output = sections.get("Output format")
