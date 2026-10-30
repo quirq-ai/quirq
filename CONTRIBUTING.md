@@ -12,6 +12,7 @@ python3 .github/scripts/check_structure.py
 
 ```
 README.md          what the workspace is and how to open it
+SPACE.md           the goal, its outcomes, owners, rules and routines
 LICENSE
 CONTRIBUTING.md    these rules
 CLAUDE.md          the same rules, pointed at for AI assistants
@@ -25,6 +26,7 @@ Vision/            direction documents, *.md
 
 - Only the files and folders above may sit at the top level. **(checked)** A new section or top-level file needs this list, the checker, and the README updated in the same pull request.
 - Every section has a `README.md` that says what goes in it. **(checked)**
+- `SPACE.md` says what the workspace is for: `## Goal` in one sentence, `## Outcomes` as a task list (a trailing `@name` says who answers for one), `## Owners`, `## Rules` and `## Routines`. The hub shows it first, with how many outcomes are done. Tick an outcome only with a link to the output that proves it, and change the goal here before changing the channels.
 - Sections are flat: no subfolders, except Chat (below). **(checked)**
 - Each section holds only its own file type, listed above, plus README.md files. **(checked)**
 

@@ -6,7 +6,8 @@ Before committing, run `python3 .github/scripts/check_structure.py` and fix ever
 
 The short version:
 
-- Top level holds only the five sections (`Activity`, `Chat`, `Insights`, `Library`, `Vision`), `.github/`, and the root docs and config files.
+- Read [SPACE.md](SPACE.md) first: its goal and outcomes decide what is worth doing, and its rules and routines say how. Tick an outcome only with a link to the output that proves it.
+- Top level holds only the five sections (`Activity`, `Chat`, `Insights`, `Library`, `Vision`), `.github/`, and the root docs (including `SPACE.md`) and config files.
 - Sections hold one file type each: Activity `.jsonl`, Chat `.json` (plus channel READMEs, inputs, and outputs), Insights `.json`, Library `.url`, Vision `.md`. Each has a `README.md`.
 - Sections are flat except Chat, which is made of channels: `Chat/<channel>/` (a workstream, or a personal channel named after a GitHub login). A channel holds `README.md` (`## Input` and `## Output format`), conversations `*.json` (plus the hub's `*.log.jsonl` chat logs beside them), `inputs/` (any file type), and `output/`.
 - A channel can hold sub-channels one level deep (`Chat/<channel>/<sub-channel>/`, same shape, README adds `## Owner`): worker threads a person or agent opens. A worker sub-channel adds `## Worker`, the Agents Hub task title that runs it; follow "Worker agents are Agents Hub tasks" in CONTRIBUTING.md. Optional `## Status` is Open or Done.

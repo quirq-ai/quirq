@@ -20,6 +20,8 @@ Select the root of this repository itself so the links in the examples, which ar
 
 ## On the hub
 
+What this workspace is for is in [SPACE.md](SPACE.md): its goal, the outcomes that show it is met, who owns it, and the rules and routines people and agents here follow. The hub shows it at the top of the project, with how many outcomes are done.
+
 This workspace is also the project [quirq/quirq](https://hub.quirq.dev/quirq/quirq) on hub.quirq.dev, in the `quirq` space. Its **Files** tab shows the sections the way open-chat does, and members of the space can type into any conversation: each message is appended to the `.log.jsonl` beside it and committed for them. To work on it with plain git, install the spacehub CLI, run `spacehub auth login`, then:
 
 ```sh

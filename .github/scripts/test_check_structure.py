@@ -104,6 +104,13 @@ class StructureCheckerTests(unittest.TestCase):
         self.write("Chat/project/README.md", self.readme(status="In progress"))
         self.assert_problem('Chat/project/README.md: "## Status" must be Open or Done')
 
+    def test_space_md_is_a_top_level_file(self):
+        self.write("SPACE.md", "# Project\n\n## Goal\nShip it.\n\n## Outcomes\n- [ ] [Plan](Vision/project-plan.md)\n")
+        result = self.run_checker()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.write("PLAN.md", "# Plan\n")
+        self.assert_problem("PLAN.md: not an allowed top-level file")
+
     def test_content_filename_must_be_kebab_case(self):
         (self.root / "Vision/project-plan.md").rename(self.root / "Vision/Project_Plan.md")
         self.assert_problem("Vision/Project_Plan.md: file names are lowercase kebab-case")

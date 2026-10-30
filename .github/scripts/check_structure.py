@@ -27,6 +27,7 @@ ROOT_FILES = {
     "LICENSE",
     "CONTRIBUTING.md",
     "CLAUDE.md",
+    "SPACE.md",
     ".editorconfig",
     ".gitattributes",
     ".gitignore",
