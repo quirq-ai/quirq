@@ -1,0 +1,11 @@
+{
+  "type": "conversation",
+  "title": "jobs's channel",
+  "subtitle": "An agent for the quirq organization",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "This is jobs's channel. Its status and activity in quirq appear here, and you can talk to it below."
+    }
+  ]
+}
