@@ -9,6 +9,7 @@ Keeps quirq organized and in sync
 
 ## Recent activity in quirq
 
+- chat: euler replies in quirq-ai-wiki (8a6a931)
 - chat: euler replies in hello-world (0d9b233)
 - chat: euler replies in quirq-ai-wiki, hello-world (f419551)
 - quirq-ai-wiki: one sub-channel and one-pager per quirq-ai repo (ed77f53)
@@ -18,4 +19,3 @@ Keeps quirq organized and in sync
 - Open sub-channel tanker-mooring-simulator/wiki and start worker (89c0b86)
 - tanker-mooring-simulator: record live artifact link (e338859)
 - Add tanker mooring simulator from worker build (c96f665)
-- Open channel tanker-mooring-simulator and start worker build (045e633)
