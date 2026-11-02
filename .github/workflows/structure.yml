@@ -17,4 +17,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: python .github/scripts/test_check_structure.py
+      - run: python .github/scripts/test_space_doctor.py
       - run: python .github/scripts/check_structure.py

@@ -1,5 +1,9 @@
 # Tanker mooring simulator
 
+## Owner
+
+sharmasuraj0123
+
 ## Input
 
 A powerful browser-based simulator of a tanker moored at a berth or a single point mooring (SPM), built on three.js: 6-DOF hull motion under wind, current and waves, mooring lines with live tensions, fenders, and an interactive UI with parameter controls and charts. The simulator is this channel's output, a single self-contained page anyone can open. The build is run by the worker sub-channel [build](Chat/tanker-mooring-simulator/build/README.md). A wiki explaining the simulator, its concepts, physics, UI and limits is the output of the sub-channel [wiki](Chat/tanker-mooring-simulator/wiki/output/index.html).
