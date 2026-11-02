@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Give every agent connected to the quirq space its own channel, Chat/<agent>/.
+"""Give every agent working in the quirq space its own channel, Chat/<agent>/.
 
 Run it from the root of a clone of quirq/quirq that is up to date with the
-hub's main. It asks the hub which agents are connected to the space
-(`spacehub agent list`), then for each one:
+hub's main. It asks the hub for every agent (`spacehub agent list`) and keeps
+the ones connected to the space or with a commit here in the last
+ACTIVE_DAYS days (an agent can push here through a member without being
+connected). Then for each one:
 
 - opens Chat/<agent>/ if it is missing: README.md with "## Agent", chat.json,
   and chat.log.jsonl, so the hub shows a chat for it;
 - appends a status turn to chat.log.jsonl when where it is connected or
   running changes, and an activity turn listing its new commits here;
 - rewrites output/one-pager.md, the agent's profile and recent activity;
-- sets "## Status" to Done when the agent is no longer connected, and back to
-  Open when it returns.
+- sets "## Status" to Done when the agent is neither connected nor active,
+  and back to Open when it returns.
 
 It only writes files; the caller commits and pushes them to the hub. Its own
 commits use the subject prefix "agent-channels:", which it leaves out of the
@@ -33,6 +35,7 @@ COMMIT_PREFIX = "agent-channels:"
 # Turns this script writes are authored by euler, the agent that runs it.
 WRITER = "euler"
 FIRST_ACTIVITY = 5
+ACTIVE_DAYS = 14
 MAX_LISTED = 10
 AGENT_LINE_RE = re.compile(
     r"^(?P<name>[a-z0-9][a-z0-9-]*)\s+owned by (?P<owner>\S+)\s+"
@@ -71,9 +74,11 @@ def description(name, offline):
     return lines[1].strip() if len(lines) > 1 and lines[1].strip() else ""
 
 
-def commits(name, since=None, limit=None):
+def commits(name, since=None, limit=None, days=None):
     """The agent's own commits on HEAD, newest first, without this script's."""
     args = ["git", "log", "--no-merges", f"--author=^{name} <", "--format=%H%x09%cI%x09%s"]
+    if days:
+        args.append(f"--since={days}.days")
     if limit:
         # Extra room for this script's commits, which are filtered out below.
         args.append(f"-{limit * 4}")
@@ -106,11 +111,13 @@ def now():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-def status_text(name, agent):
-    if SPACE not in agent["connected"]:
-        return f"{name} is no longer connected to {SPACE}."
+def status_text(name, agent, active):
     running = f"running on {', '.join(agent['hosts'])}" if agent["hosts"] else "not running"
-    return f"{name} is connected to {', '.join(agent['connected'])} and {running}."
+    if SPACE in agent["connected"]:
+        return f"{name} is connected to {', '.join(agent['connected'])} and {running}."
+    if active:
+        return f"{name} is working in {SPACE} without being connected to the space, and {running}."
+    return f"{name} is no longer connected to {SPACE} or working here."
 
 
 def listed(found):
@@ -133,7 +140,7 @@ def open_channel(folder, name, about):
     write(
         folder / "README.md",
         f"# {name}\n\n"
-        f"## Input\n\n{name}'s channel, opened when {name} connected to the {SPACE} space. "
+        f"## Input\n\n{name}'s channel, opened when {name} started working in the {SPACE} space. "
         f"Talk to {name} here: its status and the work it pushes show up in this chat. "
         "Drop files for it in inputs/.\n\n"
         f"## Output format\n\nOne pager\n\n## Agent\n\n{name}\n\n## Status\n\nOpen\n",
@@ -144,7 +151,7 @@ def open_channel(folder, name, about):
             {
                 "type": "conversation",
                 "title": f"{name}'s channel",
-                "subtitle": about or f"An agent connected to {SPACE}.",
+                "subtitle": about or f"An agent working in {SPACE}.",
                 "messages": [
                     {
                         "role": "assistant",
@@ -187,12 +194,13 @@ def one_pager(name, agent, about, recent):
 def sync_agent(name, agent, offline):
     folder = Path("Chat") / name
     readme, log = folder / "README.md", folder / "chat.log.jsonl"
-    connected = SPACE in agent["connected"]
+    active = bool(commits(name, limit=1, days=ACTIVE_DAYS))
+    here = SPACE in agent["connected"] or active
     if folder.exists() and "## Agent" not in (readme.read_text(encoding="utf-8") if readme.exists() else ""):
         print(f"skip {name}: Chat/{name}/ is a channel that is not {name}'s")
         return
     if not folder.exists():
-        if not connected:
+        if not here:
             return
         open_channel(folder, name, description(name, offline))
         print(f"opened Chat/{name}/")
@@ -200,12 +208,12 @@ def sync_agent(name, agent, offline):
     turns = read_log(log)
     new = []
 
-    status = status_text(name, agent)
+    status = status_text(name, agent, active)
     last_status = next((t["content"] for t in reversed(turns) if str(t.get("id", "")).startswith("status-")), None)
     if status != last_status:
         new.append({"id": f"status-{now().replace(':', '').replace('.', '')[:17]}", "role": "assistant",
                     "author": WRITER, "content": status, "time": now()})
-    set_status(readme, "Open" if connected else "Done")
+    set_status(readme, "Open" if here else "Done")
 
     cursor = next((t["id"][len("activity-"):] for t in reversed(turns) if str(t.get("id", "")).startswith("activity-")), None)
     try:
@@ -234,7 +242,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--agents", help="read `spacehub agent list` output from this file")
     args = parser.parse_args()
-    listing = Path(args.agents).read_text(encoding="utf-8") if args.agents else run("spacehub", "agent", "list", SPACE)
+    listing = Path(args.agents).read_text(encoding="utf-8") if args.agents else run("spacehub", "agent", "list")
     agents = parse_agents(listing)
     # Agents that left keep their channel; it is marked Done.
     for folder in sorted(Path("Chat").iterdir()):

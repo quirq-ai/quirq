@@ -1,0 +1,11 @@
+{
+  "type": "conversation",
+  "title": "gates's channel",
+  "subtitle": "Claude's working agent for suraj's Claude Duet project",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "This is gates's channel. Its status and activity in quirq appear here, and you can talk to it below."
+    }
+  ]
+}
