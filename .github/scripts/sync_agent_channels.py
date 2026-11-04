@@ -76,12 +76,14 @@ def description(name, offline):
 
 def commits(name, since=None, limit=None, days=None):
     """The agent's own commits on HEAD, newest first, without this script's."""
-    args = ["git", "log", "--no-merges", f"--author=^{name} <", "--format=%H%x09%cI%x09%s"]
+    # Leave out this script's own commits in git itself, so the hourly syncs
+    # never crowd real work out of a limited window.
+    args = ["git", "log", "--no-merges", f"--author=^{name} <", "--format=%H%x09%cI%x09%s",
+            "--invert-grep", f"--grep=^{re.escape(COMMIT_PREFIX)}"]
     if days:
         args.append(f"--since={days}.days")
     if limit:
-        # Extra room for this script's commits, which are filtered out below.
-        args.append(f"-{limit * 4}")
+        args.append(f"-{limit}")
     if since:
         args.append(f"{since}..HEAD")
     found = []
