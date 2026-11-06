@@ -3,7 +3,7 @@
 Keeps quirq organized and in sync
 
 - Owned by: quirq
-- Connected to: quirq
+- Connected to: explain, quirq
 - Running on: not running
 - Definition: [euler/home](https://hub.quirq.dev/euler/home)
 
